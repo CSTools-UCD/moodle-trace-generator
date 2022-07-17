@@ -235,6 +235,7 @@ while c < 125:
 </td>
 </tr>
 </table>
+
 ## Other Options
 
 ### Generating Both Question Types
