@@ -81,7 +81,7 @@ a = input("Name?")
 print("Hello, ", a)
 ```
 File: `example2.json`
-```
+```json
 { "0" : "Sean" }
 ```
 Command:
@@ -92,9 +92,72 @@ The above combination of files and command would generate the following question
 ![Example of high level question with standard input](doc/03.stdin.example.png)
 
 An additional section is included to show the contents of the input file and the values in the program are also altered based on the contents of the file.
+
+## Template Questions
+The primary utility of this generator is the ability to generate a large number of questions from a single template. This can be done with both high and low level questions. This functionality relies on the format method in the Python string class. 
+
+Consider the following code which we will convert into a template:
+```python
+a = 0
+while a < 5:
+    a = a + 2
+	print(a)
+```
+We can replace the variable names as well as the literal values used in the code and even operators (though this can make it more difficult to ensure questions are isomorphic). 
+
+Lets consider how to change this template so that students will have different variable names. Firstly, we want the same value used every place there is currently an `a`, so we should use index formatting. We can additionally replace the 3 literal values with parameters. This gives us the code below.
+
+```python
+# This is example3.py
+{0} = {1}
+while {0} < {2}:
+    {0} = {0} + {3}
+	print({0})
+```
+
+In order to produce questions using this code we must use the `-p` or `--parameter` command line flag followed by the name of a file containing the value we wish to be used. Here the values being used to format the code are contained in the file `example3.in` (shown below). Each line must contain a value for each of the wildcards in the template, and questions will be generated for each line in the parameters file.
+```
+a 0 5 2
+b 5 10 2
+c 100 125 10
+```
+If we execute the command `python3 main.py example3.py -p example3.in` then questions will be generated about the following segments of code.
+<table>
+<tr>
+<th>First line</th>
+<th>Second line</th>
+<th>Third line</th>
+</tr>
+<tr>
+<td>
+```python
+a = 0
+while a < 5:
+    a = a + 2
+	print(a)
+```
+</td>
+<td>
+```python
+b = 5
+while b < 10:
+    b = b + 2
+	print(b)
+```
+</td>
+<td>
+```python
+c = 100
+while c < 125:
+    c = c + 10
+	print(c)
+```
+</td>
+</tr>
+</table>
 ## Other Options
 
-### Generating Both Types
+### Generating Both Question Types
 Questions can be generated simeltaneously at high and low levels by using the `-b` or `--both` command line flags. 
 
 
