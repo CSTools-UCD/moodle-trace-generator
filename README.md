@@ -38,7 +38,7 @@ python3 main.py example.py -i
 ### The Generated Question
 This question is generated based on the second line of code in the example.py above.
 
-![Example of low level question](doc/02.low.example.png)
+![Example of low level question](doc/02.low.example.b.png)
 
 All inputs except the result and value columns are choosen from drop-down boxes, while these must be typed by the student. 
 
