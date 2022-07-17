@@ -115,13 +115,13 @@ while {0} < {2}:
 	print({0})
 ```
 
-In order to produce questions using this code we must use the `-p` or `--parameter` command line flag followed by the name of a file containing the value we wish to be used. Here the values being used to format the code are contained in the file `example3.in` (shown below). Each line must contain a value for each of the wildcards in the template, and questions will be generated for each line in the parameters file.
+In order to produce questions using this code we must use the `-p` or `--parameter` command line flag followed by the name of a file containing the value we wish to be used. Here the values being used to format the code are contained in the file `example3.pm` (shown below). Each line must contain a value for each of the wildcards in the template, and questions will be generated for each line in the parameters file.
 ```
 a 0 5 2
 b 5 10 2
 c 100 125 10
 ```
-If we execute the command `python3 main.py example3.py -p example3.in` then questions will be generated about the following segments of code.
+If we execute the command `python3 main.py example3.py -p example3.pm` then questions will be generated about the following segments of code.
 <table>
 <tr>
 <th>First line</th>
@@ -159,6 +159,82 @@ while c < 125:
 </tr>
 </table>
 
+### Combining Templates and Input
+When combining templates with input, the process is much the same. However, rather than the intput for a question being stored in the dictionary using the key `"0"`, it is stored using the 0 indexed count of the parameter input line. 
+
+For example, the following code template:
+```python
+# This is example4.py
+{0} = int(input("number"))
+while {0} < {1}:
+    {0} = {0} + {2}
+	print({0})
+```
+Could be combined with the following parameter file (`example4.pm`):
+```
+a 5 2
+b 10 2
+c 125 10
+```
+And the following input file (`example4.in`):
+```json
+{
+  "0" : "0",
+  "1" : "5",
+  "2" : "100"
+}
+```
+If we execute the command `` then questions will be generated about the following segments of code.
+<table>
+<tr>
+<th>First line</th>
+<th>Second line</th>
+<th>Third line</th>
+</tr>
+<tr>
+<td>
+
+```python
+a = int(input("number"))
+while a < 5:
+    a = a + 2
+    print(a)
+```
+</td>
+<td>
+
+```python
+b = int(input("number"))
+while b < 10:
+    b = b + 2
+    print(b)
+```
+</td>
+<td>
+
+```python
+c = int(input("number"))
+while c < 125:
+    c = c + 10
+    print(c)
+```
+</td>
+</tr>
+<tr>
+<td>
+
+![Example of generated question using template and input](doc/04.a.png)
+</td>
+<td>
+
+![Example of generated question using template and input](doc/04.b.png)
+</td>
+<td>
+
+![Example of generated question using template and input](doc/04.c.png)
+</td>
+</tr>
+</table>
 ## Other Options
 
 ### Generating Both Question Types
