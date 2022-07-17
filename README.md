@@ -135,7 +135,7 @@ If we execute the command `python3 main.py example3.py -p example3.in` then ques
 a = 0
 while a < 5:
     a = a + 2
-	print(a)
+    print(a)
 ```
 </td>
 <td>
@@ -144,7 +144,7 @@ while a < 5:
 b = 5
 while b < 10:
     b = b + 2
-	print(b)
+    print(b)
 ```
 </td>
 <td>
@@ -153,7 +153,7 @@ while b < 10:
 c = 100
 while c < 125:
     c = c + 10
-	print(c)
+    print(c)
 ```
 </td>
 </tr>
