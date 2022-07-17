@@ -130,6 +130,7 @@ If we execute the command `python3 main.py example3.py -p example3.in` then ques
 </tr>
 <tr>
 <td>
+
 ```python
 a = 0
 while a < 5:
@@ -138,6 +139,7 @@ while a < 5:
 ```
 </td>
 <td>
+
 ```python
 b = 5
 while b < 10:
@@ -146,6 +148,7 @@ while b < 10:
 ```
 </td>
 <td>
+
 ```python
 c = 100
 while c < 125:
@@ -155,6 +158,7 @@ while c < 125:
 </td>
 </tr>
 </table>
+
 ## Other Options
 
 ### Generating Both Question Types
