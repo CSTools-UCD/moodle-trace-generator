@@ -13,17 +13,20 @@ from builder.feedback import FeedbackBuilder
 from builder.extra_tags import *
 from builder.calculations import CalculationBuilder
 from icecream import ic
+from collections import namedtuple
+
+Config = namedtuple('Config', 'language qtype format name category only reduced constants')
 
 
 class Builder(object):
-    def __init__(self, parser: Parser, flow_parser: FlowchartCreator, image_gen: ImageGenerator, reduced: bool, literal: bool, animate: bool, code_list: List[Statement]) -> None:
+    def __init__(self, parser: Parser, flow_parser: FlowchartCreator, image_gen: ImageGenerator, config: Config, code_list: List[Statement]) -> None:
         super().__init__()
         self.parser = parser
         self.image_gen = image_gen
         self.flow_parse = flow_parser
         self.v = VarInfoBuilder(parser)
-        self.calc = CalculationBuilder(parser, reduced, literal, code_list, self.v)
-        self.fback = FeedbackBuilder(image_gen, animate)
+        self.calc = CalculationBuilder(parser, config.reduced, config.constants, code_list, self.v)
+        self.fback = FeedbackBuilder(image_gen, config)
 
     def build_question(self, question_name: str, question_text: questiontext, tags: List[str]) -> question:
         quest = question(type="cloze")
@@ -120,9 +123,10 @@ class Builder(object):
 
     def build_file_question(self, code_list: List[Statement], file_name: str, source_code: str, tags: List[str], std_in: str) -> List[question]:
         image = self.image_gen.get_code_image(source_code)
+        img_tag = self.image_gen.encode_image(image)
         questions = []
         feedback = self.fback.build_feedback_file(code_list, source_code)
-        question_text = self.build_question_text_file(code_list, image, std_in)
+        question_text = self.build_question_text_file(code_list, img_tag, std_in)
         qest = self.build_question("{}".format(file_name.split("/")[-1]), question_text, tags)
         qest.add(feedback)
         questions.append(qest)

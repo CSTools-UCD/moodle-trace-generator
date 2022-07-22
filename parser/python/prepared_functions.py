@@ -31,7 +31,7 @@ def preped_min(*argv: float) -> float:
 def preped_sum(*argv: float) -> float:
     return sum(argv)
 
-f = open("temp/output.txt", "w")
+f = open("temp_output.txt", "w")
 def preped_print(*args : Any , **kwargs : Any) -> None:
     kwargs["file"] = f
     return print(*args, **kwargs)
