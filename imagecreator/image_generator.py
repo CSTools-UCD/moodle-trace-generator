@@ -1,7 +1,7 @@
 import base64
-
-from dominate.tags import img, style
-from builder.extra_tags import CDATA
+import random
+from dominate.tags import img, style,  button, span, br, div
+from builder.extra_tags import CDATA, scrpt
 from dominate.svg import svg, text, g, tspan, defs, rect
 from copy import deepcopy
 from typing import Dict, List
@@ -12,7 +12,47 @@ from parser.generic_flowchart import FlowchartCreator
 
 NO_COPY = "svg text {{ -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }} svg text::selection {{ background: none; }}"
 NORMAL_STYLE = ' .normal {{ font-family: "Courier"; font-size: 18; }}'
-
+JS_TEMPLATE = """
+  let map_{0:03d} = {1};
+  let timer_{0:03d};
+  let index_{0:03d} = 0;
+  let speed_{0:03d} = 1000;
+  document.getElementById("image_{0:03d}").src = 'data:image/svg+xml;base64,' + map_{0:03d}[index_{0:03d}] + '';
+  document.getElementById("frame_num_{0:03d}").textContent = 0
+  document.getElementById("frame_max_{0:03d}").textContent = map_{0:03d}.length - 1
+  function forward_{0:03d}() {{
+    index_{0:03d} = (index_{0:03d} + 1) % map_{0:03d}.length;
+    document.getElementById("image_{0:03d}").src = 'data:image/svg+xml;base64,' + map_{0:03d}[index_{0:03d}] + '';
+    document.getElementById("frame_num_{0:03d}").textContent = index_{0:03d}
+  }}
+  function back_{0:03d}() {{
+    index_{0:03d} = index_{0:03d} - 1 < 0 ? map_{0:03d}.length - 1 : index_{0:03d} - 1;
+    document.getElementById("image_{0:03d}").src = 'data:image/svg+xml;base64,' + map_{0:03d}[index_{0:03d}] + '';
+    document.getElementById("frame_num_{0:03d}").textContent = index_{0:03d}
+  }}
+  function start_{0:03d}() {{
+    index_{0:03d} = 0;
+    document.getElementById("image_{0:03d}").src = 'data:image/svg+xml;base64,' + map_{0:03d}[index_{0:03d}] + '';
+    document.getElementById("frame_num_{0:03d}").textContent = index_{0:03d}
+  }}
+  function end_{0:03d}() {{
+    index_{0:03d} = map_{0:03d}.length - 1;
+    document.getElementById("image_{0:03d}").src = 'data:image/svg+xml;base64,' + map_{0:03d}[index_{0:03d}] + '';
+    document.getElementById("frame_num_{0:03d}").textContent = index_{0:03d}
+  }}
+  function play_{0:03d}() {{
+    document.getElementById("playButton_{0:03d}").disable = true
+    document.getElementById("stopButton_{0:03d}").disable = false
+    forward_{0:03d}();
+    clearInterval(timer_{0:03d});
+    timer_{0:03d} = setTimeout(play_{0:03d}, speed_{0:03d});
+  }}
+  function stop_{0:03d}() {{
+    document.getElementById("playButton_{0:03d}").disable = false
+    document.getElementById("stopButton_{0:03d}").disable = true
+    clearInterval(timer_{0:03d});
+  }}
+"""
 
 class ImageGenerator(object):
     def __init__(self, flow_generator: FlowchartCreator) -> None:
@@ -41,7 +81,8 @@ class ImageGenerator(object):
         self.last_code_highlight: int = -1
 
     def encode_image(self, image_str: str) -> img:
-        byte_array = base64.b64encode(image_str.encode('ascii'))
+        print(image_str)
+        byte_array = base64.b64encode(image_str.encode('utf-8'))
         return img(alt="", _class="img-responsive atto_image_button_text-bottom", style="object-fit:contain", width="100%", src="data:image/svg+xml;base64," + str(byte_array)[2:-1])
 
     def get_code_image(self, source: str) -> str:
@@ -172,6 +213,23 @@ class ImageGenerator(object):
 
     def get_all_animation_list(self, code: List[Statement], source_code: str) -> List[str]:
         raise Exception("This functionality has not yet been implemented")
+
+    def wrap_animation_list_html(self, svg_frames: Dict[int, str]):
+        control_div = div()
+        identifier = random.randint(0, 1000)
+        control_div += img(id="image_{:03d}".format(identifier), alt="", _class="img-responsive atto_image_button_text-bottom", style="object-fit:contain", width="100%", src="")
+        control_div += br()
+        control_div += button("\u23EE Start", type="button", onclick="start_{:03d}()".format(identifier))
+        control_div += button("\u23EA Back", type="button", onclick="back_{:03d}()".format(identifier))
+        control_div += button("\u23F8 Pause", type="button", id="stopButton_{0:03d}".format(identifier), onclick="stop_{:03d}()".format(identifier))
+        control_div += span("0", id="frame_num_{0:03d}".format(identifier))
+        control_div += '/'
+        control_div += span("0", id="frame_max_{0:03d}".format(identifier))
+        control_div += button("Play \u23F5", type="button", id="playButton_{0:03d}".format(identifier), onclick="play_{0:03d}()".format(identifier))
+        control_div += button("Forward \u23E9", type="button", onclick="forward_{0:03d}()".format(identifier))
+        control_div += button("End \u23ED", type="button", onclick="end_{0:03d}()".format(identifier))
+        control_div += scrpt(JS_TEMPLATE.format(identifier, str( [svg_frames[k] for k in sorted(svg_frames.keys()) ] )), type="text/javascript")
+        return control_div
 
     def get_labels_statement(self, e: Statement, labels: List[Tuple[str, str]], edges: List[Tuple[str, str, str]]) -> None:
         label_string = '[shape="box", style="filled", label="{}\\n{}", class="node{}"]'

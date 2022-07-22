@@ -51,7 +51,8 @@ class FeedbackBuilder(object):
                 "The diagram above shows an animation of the overall program flow. On the left, the flowchart shows the control flow of the program and on the right the code is being shown. The line of code and the corresponding part of the flowchart are highlighted step by step to show the execution of the program. The table below the code shows the currently executing line of code as well as the current value of each of the variables.")
             d.add(para)
         elif self.config.format == 'html':
-            image_div: div = self.image_gen.get_all_animation_list(code, source_code)
+            frames: Dict[int,str] = self.image_gen.get_all_animation_list(code, source_code)
+            image_div = self.image_gen.wrap_animation_list_html(frames)
             # image_tag = self.image_gen.encode_image(image)
             divHolder.add(image_div)
             para = p(

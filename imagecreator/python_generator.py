@@ -8,108 +8,14 @@ from graphviz import Source
 from dominate.tags import img, style, div, button, span, script, br
 from xml.dom.minidom import Element, parseString, Comment
 from xml.dom import getDOMImplementation
-from builder.extra_tags import scrpt
+from builder.extra_tags import scrpt, CDATA
 from pygments.lexers import PythonLexer
 from parser.parser_types import Edge, Calculation, Statement, empty_statement
 from dominate.util import raw
-from builder.extra_tags import CDATA
 from dominate.svg import svg, text, g, tspan, defs, rect
 from pygments.token import Text, Operator, Keyword, Name, String, Number, Punctuation
 from parser.generic_flowchart import FlowchartCreator
 
-HTML_TEMPLATE = """
-<img id="page_1" src="" height="400"><br>
-<button type="button" onclick="start()">\u23EE; Start</button>
-<button type="button" onclick="back()">\u23EA; Back</button>
-<button id="stopButton" type="button" onclick="stop()">\u23F8; Pause</button>
-
-<span id="frame_num">0</span>/<span id="frame_max">0</span>
-<button id="playButton" type="button" onclick="play()">Play \u23EF;</button>
-<button type="button" onclick="forward()">Forward \u23E9;</button>
-<button type="button" onclick="end()">End \u23ED; </button>
-<script>
-  let map_{0:03d} = {1};
-  let timer_{0:03d};
-  let index_{0:03d} = 0;
-  let speed_{0:03d} = 1000;
-  document.getElementById("image_{0:03d}").src = 'data:image/svg+xml;base64,' + map_{0:03d}[index_{0:03d}] + '';
-  document.getElementById("frame_num_{0:03d}").textContent = 0
-  document.getElementById("frame_max_{0:03d}").textContent = map_{0:03d}.length - 1
-  function forward_{0:03d}() {{
-    index_{0:03d} = (index_{0:03d} + 1) % map_{0:03d}.length;
-    document.getElementById("image_{0:03d}").src = 'data:image/svg+xml;base64,' + map_{0:03d}[index_{0:03d}] + '';
-    document.getElementById("frame_num_{0:03d}").textContent = index_{0:03d}
-  }}
-  function back_{0:03d}() {{
-    index = index_{0:03d} - 1 < 0 ? map_{0:03d}.length - 1 : index_{0:03d} - 1;
-    document.getElementById("image_{0:03d}").src = 'data:image/svg+xml;base64,' + map[index_{0:03d}] + '';
-    document.getElementById("frame_num_{0:03d}").textContent = index_{0:03d}
-  }}
-  function start_{0:03d}() {{
-    index = 0;
-    document.getElementById("image_{0:03d}").src = 'data:image/svg+xml;base64,' + map_{0:03d}[index_{0:03d}] + '';
-    document.getElementById("frame_num_{0:03d}").textContent = index_{0:03d}
-  }}
-  function end_{0:03d}() {{
-    index = map_{0:03d}.length - 1;
-    document.getElementById("image_{0:03d}").src = 'data:image/svg+xml;base64,' + map_{0:03d}[index_{0:03d}] + '';
-    document.getElementById("frame_num_{0:03d}").textContent = index_{0:03d}
-  }}
-  function play_{0:03d}() {{
-    document.getElementById("playButton_{0:03d}").disable = true
-    document.getElementById("stopButton_{0:03d}").disable = false
-    forward_{0:03d}();
-    clearInterval(timer_{0:03d});
-    timer_{0:03d} = setTimeout(play_{0:03d}, speed_{0:03d});
-  }}
-  function stop_{0:03d}() {{
-    document.getElementById("playButton_{0:03d}").disable = false
-    document.getElementById("stopButton_{0:03d}").disable = true
-    clearInterval(timer_{0:03d});
-  }}
-</script>
-"""
-JS_TEMPLATE = """
-  let map_{0:03d} = {1};
-  let timer_{0:03d};
-  let index_{0:03d} = 0;
-  let speed_{0:03d} = 1000;
-  document.getElementById("image_{0:03d}").src = 'data:image/svg+xml;base64,' + map_{0:03d}[index_{0:03d}] + '';
-  document.getElementById("frame_num_{0:03d}").textContent = 0
-  document.getElementById("frame_max_{0:03d}").textContent = map_{0:03d}.length - 1
-  function forward_{0:03d}() {{
-    index_{0:03d} = (index_{0:03d} + 1) % map_{0:03d}.length;
-    document.getElementById("image_{0:03d}").src = 'data:image/svg+xml;base64,' + map_{0:03d}[index_{0:03d}] + '';
-    document.getElementById("frame_num_{0:03d}").textContent = index_{0:03d}
-  }}
-  function back_{0:03d}() {{
-    index_{0:03d} = index_{0:03d} - 1 < 0 ? map_{0:03d}.length - 1 : index_{0:03d} - 1;
-    document.getElementById("image_{0:03d}").src = 'data:image/svg+xml;base64,' + map_{0:03d}[index_{0:03d}] + '';
-    document.getElementById("frame_num_{0:03d}").textContent = index_{0:03d}
-  }}
-  function start_{0:03d}() {{
-    index_{0:03d} = 0;
-    document.getElementById("image_{0:03d}").src = 'data:image/svg+xml;base64,' + map_{0:03d}[index_{0:03d}] + '';
-    document.getElementById("frame_num_{0:03d}").textContent = index_{0:03d}
-  }}
-  function end_{0:03d}() {{
-    index_{0:03d} = map_{0:03d}.length - 1;
-    document.getElementById("image_{0:03d}").src = 'data:image/svg+xml;base64,' + map_{0:03d}[index_{0:03d}] + '';
-    document.getElementById("frame_num_{0:03d}").textContent = index_{0:03d}
-  }}
-  function play_{0:03d}() {{
-    document.getElementById("playButton_{0:03d}").disable = true
-    document.getElementById("stopButton_{0:03d}").disable = false
-    forward_{0:03d}();
-    clearInterval(timer_{0:03d});
-    timer_{0:03d} = setTimeout(play_{0:03d}, speed_{0:03d});
-  }}
-  function stop_{0:03d}() {{
-    document.getElementById("playButton_{0:03d}").disable = false
-    document.getElementById("stopButton_{0:03d}").disable = true
-    clearInterval(timer_{0:03d});
-  }}
-"""
 
 class PythonImageGenerator(ImageGenerator):
     def __init__(self, flow_generator: FlowchartCreator) -> None:
@@ -194,22 +100,6 @@ class PythonImageGenerator(ImageGenerator):
             svg_frames[key] = str(base64.b64encode(self.pretty_xml(self.remove_xml_comments(parseString(svg_string[:-2] + ">" + code_table_group_string + ast_group_string + defs_string + "</svg>"))).encode('utf8')))[2:-1]
         return svg_frames
     
-    def wrap_animation_list_html(self, svg_frames: Dict[int, str]):
-        control_div = div()
-        identifier = random.randint(0, 1000)
-        control_div += img(id="image_{:03d}".format(identifier), alt="", _class="img-responsive atto_image_button_text-bottom", style="object-fit:contain", width="100%", src="")
-        control_div += br()
-        control_div += button("\u23EE Start", type="button", onclick="start_{:03d}()".format(identifier))
-        control_div += button("\u23EA Back", type="button", onclick="back_{:03d}()".format(identifier))
-        control_div += button("\u23F8 Pause", type="button", id="stopButton_{0:03d}".format(identifier), onclick="stop_{:03d}()".format(identifier))
-        control_div += span("0", id="frame_num_{0:03d}".format(identifier))
-        control_div += '/'
-        control_div += span("0", id="frame_max_{0:03d}".format(identifier))
-        control_div += button("Play \u23F5", type="button", id="playButton_{0:03d}".format(identifier), onclick="play_{0:03d}()".format(identifier))
-        control_div += button("Forward \u23E9", type="button", onclick="forward_{0:03d}()".format(identifier))
-        control_div += button("End \u23ED", type="button", onclick="end_{0:03d}()".format(identifier))
-        control_div += scrpt(JS_TEMPLATE.format(identifier, str( [svg_frames[k] for k in sorted(svg_frames.keys()) ] )), type="text/javascript")
-        return control_div
 
     def get_all_animation(self, code: List[Statement], source_code: str) -> str:
         nodes, edges = self.flow.parse_source(source_code)
