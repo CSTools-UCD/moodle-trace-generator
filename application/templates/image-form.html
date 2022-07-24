@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Trace Image Generator</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="{{preface~url_for('static', filename='pico.min.css') }}">
+        <script>  
+            function check() {
+                if (document.getElementById('both').checked) {
+                    document.getElementById('static').disabled = true;
+                    document.getElementById('static').checked = false;
+                    document.getElementById('svg').checked = true;
+                    document.getElementById('svg').disabled = false;
+                    document.getElementById('html').disabled = false;
+                    document.getElementById('zip').disabled = false;
+                    document.getElementById('html').checked = false;
+                    document.getElementById('zip').checked = false;
+                }
+    
+                else {
+                    document.getElementById('static').disabled = false;
+                    document.getElementById('static').checked = true;
+                    document.getElementById('svg').disabled = true;
+                    document.getElementById('zip').disabled = true;
+                    document.getElementById('html').disabled = true;
+                    document.getElementById('html').checked = false;
+                    document.getElementById('zip').checked = false;
+                    document.getElementById('svg').checked = false;
+                }
+            }  
+        </script>
+    </head>
+    <body>
+        {% include 'nav.html' %}
+        <article>
+            <div class="container">
+                <h1 class="logo">Trace Image Generator</h1>
+                <p>This application is a complement to the moodle trace generator. It generates the images that are used within the questions. You can now download the images directly for use in class notes.</p>
+                <form method="post" enctype="multipart/form-data">
+                    <fieldset>
+                        <legend>Language:</legend>
+                        <label for="python">
+                            Python
+                            <input type="radio" id="python" name="language" value="python"  checked>
+                        </label>
+                        <label for="C">
+                            C
+                            <input type="radio" id="C" name="language" value="C">
+                        </label>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Image content:</legend>
+                        
+                        <label for="flowchart">
+                            Flowchart Image
+                            <input type="radio" id="flowchart" name="content" value="flowchart" checked onchange="check()">
+                        </label>
+                        <label for="code">
+                            Code Image
+                            <input type="radio" id="code" name="content" value="code" onchange="check()">
+                        </label>
+                        <label for="both">
+                            Animated Code and Flowchart Image
+                            <input type="radio" id="both" name="content" value="both" onchange="check()">
+                        </label>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Download Format:</legend>
+                        <label for="static">SVG<input type="radio" id="static" name="format" value="static" checked></label>
+                        <label for="svg">Animated SVG<input type="radio" id="svg" name="format" value="svg" disabled></label>
+                        <label for="html">HTML and JavaScript for image frames<input type="radio" id="html" name="format" value="html"  disabled></label>
+                        <label for="zip">ZIP file containing frames as individual images<input type="radio" id="zip" name="format" value="zip"  disabled></label>
+                    </fieldset>
+                    <input type="file" name="file" id="file" required><br>
+                    <button type="submit">Submit</button>
+                </form>
+            </div>
+        </article>    
+        <footer>
+            &copy; 2022 <a href="https://people.ucd.ie/sean.russell">Seán Russell</a>
+        </footer>
+    </body>
+    
+</html>

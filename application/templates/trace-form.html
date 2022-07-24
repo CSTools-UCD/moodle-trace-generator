@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Trace Image Generator</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="{{preface~url_for('static', filename='pico.min.css') }}">
+        <script>  
+            function check() {
+                if (document.getElementById('individual').checked) {
+                    document.getElementById('static').disabled = false;
+                    document.getElementById('static').checked = false;
+                    document.getElementById('svg').checked = true;
+                    document.getElementById('svg').disabled = false;
+                    document.getElementById('html').disabled = true;
+                    document.getElementById('html').checked = false;
+                    
+                } else {
+                    document.getElementById('static').disabled = false;
+                    document.getElementById('static').checked = false;
+                    document.getElementById('svg').disabled = false;
+                    document.getElementById('svg').checked = false;
+                    document.getElementById('html').disabled = false;
+                    document.getElementById('html').checked = true;
+                    
+                }
+            }  
+        </script>
+    </head>
+    <body>
+        {% include 'nav.html' %}
+        <article>
+            <div class="container">
+                <h1 class="logo">Trace Question Generator</h1>
+                <p>This form allows the creation of basic code tracing questions. To generate multiple question variants based on a template use the <a href="/trace{{url_for('process_advanced_quiz_post')}}">template form</a> </p>
+                <form method="post" enctype="multipart/form-data">
+                    <fieldset>
+                        <legend>Language:</legend>
+                        <label for="python">
+                            Python
+                            <input type="radio" id="python" name="language" value="python"  checked>
+                        </label>
+                        <label for="C">
+                            C
+                            <input type="radio" id="C" name="language" value="C">
+                        </label>
+                    </fieldset>
+                    <fieldset>
+                    <label for="code" data-tooltip="This should be a file containing a small amount of basic code">
+                        Code
+                        <input type="file" name="code" id="code" required >
+                    </label>
+                    <label for="input" data-tooltip="This should be a plain text file containing any input that the program will require">
+                        Input file (optional)
+                        <input type="file" name="input" id="input">
+                    </label>
+                    </fieldset>
+                    <fieldset>
+                        <label for="qname" data-tooltip="The text used here will be the base of every question name generated. ">
+                            Question Name
+                            <input type="text" id="qname" name="qname" value="question">
+                        </label>
+                    
+                    <label for="cat" data-tooltip="The text used here define the category used to stord your questions in moodle. It is automatically prepended with '$course$/top/' so that your text will define the category within your course.">
+                        Category Name
+                        <input type="text" id="cat" name="cat" value="category">
+                    </label>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Question types:</legend>
+                        <label for="individual">
+                            Individual low-level questions
+                            <input type="radio" id="individual" name="type" value="individual" checked onchange="check()">
+                        </label>
+                        <label for="all">
+                            High-level question
+                            <input type="radio" id="all" name="type" value="all" onchange="check()">
+                        </label>
+                        <label for="both">
+                            Both high and low level questions
+                            <input type="radio" id="both" name="type" value="both" onchange="check()">
+                        </label>
+                    </fieldset>
+                    <fieldset>
+                        <label for="only" data-tooltip="This should be a comma separated list of the line numbers you want to use. E.g. '1,3,5'">
+                            Limit lines numbers (comma separated list)
+                            <input type="text" id="only" name="only" value="">
+                        </label>
+                        <label for="reduced" data-tooltip="Removes some of the columns from questions">
+                            Reduce Question Columns
+                            <input type="checkbox" id="reduced" name="reduced" value="reduced" checked>
+                        </label>
+                        <label for="cons" data-tooltip="Within low-level questions, the default is to show literal constants as completed in the correct place in the question. This can be suppressed by checking this box.">
+                            Literal Constants as Questions
+                            <input type="checkbox" id="cons" name="cons">
+                        </label>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Feedback Image Format:</legend>
+                        <label for="static">SVG<input type="radio" id="static" name="format" value="static" checked></label>
+                        <label for="svg">Animated SVG<input type="radio" id="svg" name="format" value="svg" disabled></label>
+                        <label for="html">HTML and JavaScript for image frames<input type="radio" id="html" name="format" value="html"  disabled></label>
+                    </fieldset>
+                    
+                    <button type="submit">Submit</button>
+                </form>
+            </div>
+        </article>    
+        <footer>
+            &copy; 2022 <a href="https://people.ucd.ie/sean.russell">Seán Russell</a>
+        </footer>
+    </body>
+    
+</html>

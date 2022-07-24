@@ -1,0 +1,7 @@
+Flask==2.1.0
+gunicorn==20.1.0
+dominate==2.6.0
+pygments==2.9.0
+graphviz==0.16.0
+pycparser==2.20
+icecream==2.1.3
