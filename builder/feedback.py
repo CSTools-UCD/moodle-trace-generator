@@ -3,12 +3,15 @@ from imagecreator.image_generator import ImageGenerator
 from parser.parser_types import Statement, Calculation, Edge
 from builder.extra_tags import generalfeedback, questiontextT
 from dominate.tags import div, p, ul, img, li, ul
+from collections import namedtuple
+
+Config = namedtuple('Config', 'language qtype format name category only reduced constants')
 
 
 class FeedbackBuilder(object):
-    def __init__(self, image_gen: ImageGenerator, animate: bool) -> None:
+    def __init__(self, image_gen: ImageGenerator, con: Config) -> None:
         super().__init__()
-        self.animate: bool = animate
+        self.config: Config = con
         self.image_gen = image_gen
 
     def build_feedback_line(self, code: Statement) -> generalfeedback:
@@ -16,13 +19,15 @@ class FeedbackBuilder(object):
         feedbackText = questiontextT()
         divHolder = div(style="width:100%")
         d = div(style="width:100%")
-        if self.animate:
-            imageTag = self.image_gen.get_ast_animation(code)
+        if self.config.format == 'svg':
+            image = self.image_gen.get_ast_animation(code)
+            img_tag = self.image_gen.encode_image(image)
             d += p("The diagram above shows how this line of code is executed. The boxes are highlighted in green in the order that the operation contain in them are executed. The text below gives an explanation of this order.")
         else:
-            imageTag = self.image_gen.get_ast_image(code)
+            image = self.image_gen.get_ast_image(code)
+            img_tag = self.image_gen.encode_image(image)
             d += p("The diagram above shows how this line of code is executed. The text below gives an explanation of this order.")
-        divHolder.add(imageTag)
+        divHolder.add(img_tag)
         feedbackText.add(divHolder)
 
         listRoot = ul()
@@ -38,15 +43,25 @@ class FeedbackBuilder(object):
         divHolder = div(style="width:100%")
         feedbackText.add(divHolder)
         d = div(style="width:100%")
-        if self.animate:
-            imageTag = self.image_gen.get_all_animation(code, source_code)
-            divHolder.add(imageTag)
+        if self.config.format == 'svg':
+            image = self.image_gen.get_all_animation(code, source_code)
+            img_tag = self.image_gen.encode_image(image)
+            divHolder.add(img_tag)
+            para = p(
+                "The diagram above shows an animation of the overall program flow. On the left, the flowchart shows the control flow of the program and on the right the code is being shown. The line of code and the corresponding part of the flowchart are highlighted step by step to show the execution of the program. The table below the code shows the currently executing line of code as well as the current value of each of the variables.")
+            d.add(para)
+        elif self.config.format == 'html':
+            frames: Dict[int,str] = self.image_gen.get_all_animation_list(code, source_code)
+            image_div = self.image_gen.wrap_animation_list_html(frames)
+            # image_tag = self.image_gen.encode_image(image)
+            divHolder.add(image_div)
             para = p(
                 "The diagram above shows an animation of the overall program flow. On the left, the flowchart shows the control flow of the program and on the right the code is being shown. The line of code and the corresponding part of the flowchart are highlighted step by step to show the execution of the program. The table below the code shows the currently executing line of code as well as the current value of each of the variables.")
             d.add(para)
         else:
-            imageTag = self.image_gen.get_flowchart_image(source_code)
-            divHolder.add(imageTag)
+            image = self.image_gen.get_flowchart_image(source_code)
+            img_tag = self.image_gen.encode_image(image)
+            divHolder.add(img_tag)
             para = p(
                 "The flowchart above shows the control flow of the executed code. The program executes following the arrows from start to end. At condition statements (diamond) there are multiple choices and the correct one will be chosen based on the condition.")
             d.add(para)

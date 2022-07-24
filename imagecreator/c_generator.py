@@ -107,8 +107,9 @@ class CImageGenerator(ImageGenerator):
         defs_string = ''.join([line for line in svg_defs_tag.toprettyxml(indent='').split('\n') if line.strip()])
         svg_string = ''.join([line for line in new_svg_document.toprettyxml(indent='').split('\n') if line.strip()])
         pretty = self.pretty_xml(self.remove_xml_comments(parseString(svg_string[:-2] + ">" + code_table_group_string + ast_group_string + defs_string + "</svg>")))
-        byte_array = base64.b64encode(pretty.encode('utf8'))
-        return img(alt="", _class="img-responsive atto_image_button_text-bottom", style="object-fit:contain", width="100%", src="data:image/svg+xml;base64," + str(byte_array)[2:-1])
+        return pretty
+        # byte_array = base64.b64encode(pretty.encode('utf8'))
+        # return img(alt="", _class="img-responsive atto_image_button_text-bottom", style="object-fit:contain", width="100%", src="data:image/svg+xml;base64," + str(byte_array)[2:-1])
 
     def generate_code_table_animation_svg_string(self, source: str, code_list: List[Statement]) -> Tuple[float, str]:
         variables :List[str] = code_list[-1]["variables_after"].keys()

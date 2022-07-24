@@ -1,7 +1,7 @@
 import base64
-
-from dominate.tags import img, style
-from builder.extra_tags import CDATA
+import random
+from dominate.tags import img, style,  button, span, br, div
+from builder.extra_tags import CDATA, scrpt
 from dominate.svg import svg, text, g, tspan, defs, rect
 from copy import deepcopy
 from typing import Dict, List
@@ -12,11 +12,52 @@ from parser.generic_flowchart import FlowchartCreator
 
 NO_COPY = "svg text {{ -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }} svg text::selection {{ background: none; }}"
 NORMAL_STYLE = ' .normal {{ font-family: "Courier"; font-size: 18; }}'
-
+JS_TEMPLATE = """
+  let map_{0:03d} = {1};
+  let timer_{0:03d};
+  let index_{0:03d} = 0;
+  let speed_{0:03d} = 1000;
+  document.getElementById("image_{0:03d}").src = 'data:image/svg+xml;base64,' + map_{0:03d}[index_{0:03d}] + '';
+  document.getElementById("frame_num_{0:03d}").textContent = 0
+  document.getElementById("frame_max_{0:03d}").textContent = map_{0:03d}.length - 1
+  function forward_{0:03d}() {{
+    index_{0:03d} = (index_{0:03d} + 1) % map_{0:03d}.length;
+    document.getElementById("image_{0:03d}").src = 'data:image/svg+xml;base64,' + map_{0:03d}[index_{0:03d}] + '';
+    document.getElementById("frame_num_{0:03d}").textContent = index_{0:03d}
+  }}
+  function back_{0:03d}() {{
+    index_{0:03d} = index_{0:03d} - 1 < 0 ? map_{0:03d}.length - 1 : index_{0:03d} - 1;
+    document.getElementById("image_{0:03d}").src = 'data:image/svg+xml;base64,' + map_{0:03d}[index_{0:03d}] + '';
+    document.getElementById("frame_num_{0:03d}").textContent = index_{0:03d}
+  }}
+  function start_{0:03d}() {{
+    index_{0:03d} = 0;
+    document.getElementById("image_{0:03d}").src = 'data:image/svg+xml;base64,' + map_{0:03d}[index_{0:03d}] + '';
+    document.getElementById("frame_num_{0:03d}").textContent = index_{0:03d}
+  }}
+  function end_{0:03d}() {{
+    index_{0:03d} = map_{0:03d}.length - 1;
+    document.getElementById("image_{0:03d}").src = 'data:image/svg+xml;base64,' + map_{0:03d}[index_{0:03d}] + '';
+    document.getElementById("frame_num_{0:03d}").textContent = index_{0:03d}
+  }}
+  function play_{0:03d}() {{
+    document.getElementById("playButton_{0:03d}").disable = true
+    document.getElementById("stopButton_{0:03d}").disable = false
+    forward_{0:03d}();
+    clearInterval(timer_{0:03d});
+    timer_{0:03d} = setTimeout(play_{0:03d}, speed_{0:03d});
+  }}
+  function stop_{0:03d}() {{
+    document.getElementById("playButton_{0:03d}").disable = false
+    document.getElementById("stopButton_{0:03d}").disable = true
+    clearInterval(timer_{0:03d});
+  }}
+"""
 
 class ImageGenerator(object):
     def __init__(self, flow_generator: FlowchartCreator) -> None:
         super().__init__()
+        print("here", flow_generator)
         self.flow = flow_generator
         self.CHAR_WIDTH = 10
         self.LINE_SEPARATION = 22
@@ -39,7 +80,12 @@ class ImageGenerator(object):
         self.STYLESHEET = NO_COPY + NORMAL_STYLE + " {}"
         self.last_code_highlight: int = -1
 
-    def get_code_image(self, source: str) -> img:
+    def encode_image(self, image_str: str) -> img:
+        print(image_str)
+        byte_array = base64.b64encode(image_str.encode('utf-8'))
+        return img(alt="", _class="img-responsive atto_image_button_text-bottom", style="object-fit:contain", width="100%", src="data:image/svg+xml;base64," + str(byte_array)[2:-1])
+
+    def get_code_image(self, source: str) -> str:
         height, width = self._get_image_sizes(source)
         svg_tag: svg = svg(id="svg", width=width, height=height, viewBox="0.00 0.00 {} {}".format(width, height), xmlns="http://www.w3.org/2000/svg")
         svg_tag += defs(style(CDATA(self.STYLESHEET.format("")), type="text/css"))
@@ -47,23 +93,23 @@ class ImageGenerator(object):
         text_group = g(_class="normal", __pretty=False)
         svg_tag += text_group
         self._add_code_text(text_group, source)
-        byte_array = base64.b64encode(svg_tag.render(pretty=False, xhtml=True).encode('ascii'))
-        return img(alt="", _class="img-responsive atto_image_button_text-bottom", style="object-fit:contain", width="100%", src="data:image/svg+xml;base64," + str(byte_array)[2:-1])
+        return svg_tag.render(pretty=False, xhtml=True)
+        # byte_array = base64.b64encode(svg_tag.render(pretty=False, xhtml=True).encode('ascii'))
+        # return str(byte_array)[2:-1]
 
     def _add_code_text(self, text_group: g, source: str) -> int:
         raise Exception("This functionality has not yet been implemented")
 
-    def get_flowchart_image(self, source: str) -> img:
+    def get_flowchart_image(self, source: str) -> str:
         nodes, edges = self.flow.parse_source(source)
-        print(nodes)
-        print(edges)
-        byte_array = base64.b64encode(self.dot_to_svg_string(self._generate_flowchart_dot_string(nodes, edges)).encode('ascii'))
-        return img(alt="", _class="img-responsive atto_image_button_text-bottom", style="object-fit:contain", width="100%", src="data:image/svg+xml;base64," + str(byte_array)[2:-1])
+        return self.dot_to_svg_string(self._generate_flowchart_dot_string(nodes, edges))
+        # byte_array = base64.b64encode(self.dot_to_svg_string(self._generate_flowchart_dot_string(nodes, edges)).encode('ascii'))
+        # return str(byte_array)[2:-1]
     
     def get_flowchart_image_mod(self, nodes, edges) -> img:
         # nodes, edges = self.flow.parse_source(source)
-        print(nodes)
-        print(edges)
+        # print(nodes)
+        # print(edges)
         byte_array = base64.b64encode(self.dot_to_svg_string(self._generate_flowchart_dot_string_mod(nodes, edges)).encode('ascii'))
         return img(alt="", _class="img-responsive atto_image_button_text-bottom", style="object-fit:contain", width="100%", src="data:image/svg+xml;base64," + str(byte_array)[2:-1])
 
@@ -125,8 +171,9 @@ class ImageGenerator(object):
         edges: List[Tuple[str, str, str]] = list()
         self.get_labels_statement(code, labels, edges)
         dot_string = self._generate_ast_dot_string(labels, edges)
-        byte_array = base64.b64encode(self.dot_to_svg_string(dot_string).encode('ascii'))
-        return img(alt="", _class="img-responsive atto_image_button_text-bottom", style="object-fit:contain", width="100%", src="data:image/svg+xml;base64," + str(byte_array)[2:-1])
+        return self.dot_to_svg_string(dot_string)
+        # byte_array = base64.b64encode(self.dot_to_svg_string(dot_string).encode('ascii'))
+        # return img(alt="", _class="img-responsive atto_image_button_text-bottom", style="object-fit:contain", width="100%", src="data:image/svg+xml;base64," + str(byte_array)[2:-1])
 
     def _generate_ast_dot_string(self, labels: List[Tuple[str, str]], edges: List[Tuple[str, str, str]]) -> str:
         label_str: str = ""
@@ -140,8 +187,8 @@ class ImageGenerator(object):
 
     def get_code_animation(self, source: str) -> img:
         raise Exception("This functionality has not yet been implemented")
-
-    def get_ast_animation(self, code: Statement) -> img:
+    
+    def get_ast_animation(self, code: Statement) -> str:
         labels: List[Tuple[str, str]] = list()
         edges: List[Tuple[str, str, str]] = list()
         self.get_labels_statement(code, labels, edges)
@@ -157,11 +204,32 @@ class ImageGenerator(object):
         svg_defs_tag.appendChild(style_tag)
         style_tag.appendChild(cdata)
         pretty = self.pretty_xml(ast_svg_xml)
-        byte_array = base64.b64encode(pretty.encode('ascii'))
-        return img(alt="", _class="img-responsive atto_image_button_text-bottom", style="object-fit:contain", width="100%", src="data:image/svg+xml;base64," + str(byte_array)[2:-1])
+        return pretty
+        # byte_array = base64.b64encode(pretty.encode('ascii'))
+        # return img(alt="", _class="img-responsive atto_image_button_text-bottom", style="object-fit:contain", width="100%", src="data:image/svg+xml;base64," + str(byte_array)[2:-1])
 
     def get_all_animation(self, code: List[Statement], source_code: str) -> img:
         raise Exception("This functionality has not yet been implemented")
+
+    def get_all_animation_list(self, code: List[Statement], source_code: str) -> List[str]:
+        raise Exception("This functionality has not yet been implemented")
+
+    def wrap_animation_list_html(self, svg_frames: Dict[int, str]):
+        control_div = div()
+        identifier = random.randint(0, 1000)
+        control_div += img(id="image_{:03d}".format(identifier), alt="", _class="img-responsive atto_image_button_text-bottom", style="object-fit:contain", width="100%", src="")
+        control_div += br()
+        control_div += button("\u23EE Start", type="button", onclick="start_{:03d}()".format(identifier))
+        control_div += button("\u23EA Back", type="button", onclick="back_{:03d}()".format(identifier))
+        control_div += button("\u23F8 Pause", type="button", id="stopButton_{0:03d}".format(identifier), onclick="stop_{:03d}()".format(identifier))
+        control_div += span("0", id="frame_num_{0:03d}".format(identifier))
+        control_div += '/'
+        control_div += span("0", id="frame_max_{0:03d}".format(identifier))
+        control_div += button("Play \u23F5", type="button", id="playButton_{0:03d}".format(identifier), onclick="play_{0:03d}()".format(identifier))
+        control_div += button("Forward \u23E9", type="button", onclick="forward_{0:03d}()".format(identifier))
+        control_div += button("End \u23ED", type="button", onclick="end_{0:03d}()".format(identifier))
+        control_div += scrpt(JS_TEMPLATE.format(identifier, str( [svg_frames[k] for k in sorted(svg_frames.keys()) ] )), type="text/javascript")
+        return control_div
 
     def get_labels_statement(self, e: Statement, labels: List[Tuple[str, str]], edges: List[Tuple[str, str, str]]) -> None:
         label_string = '[shape="box", style="filled", label="{}\\n{}", class="node{}"]'
@@ -322,6 +390,18 @@ class ImageGenerator(object):
                 animation_frames += self.generate_keyframe(classes, "highlight_flow{}".format(self.last_code_highlight), sorted(line_dict[l]), len(lines), "fill", high_colour, node_colour)
                 animation_frames += self.generate_keyframe([".codeline{0}".format(self.last_code_highlight)], "highlight_code{}".format(self.last_code_highlight), sorted(line_dict[l]), len(lines), "visibility", "visible", "hidden")
         return self.STYLESHEET.format(animation_frames)
+
+    def _generate_animation_css_list(self, code_list: List[Statement], node_colour: str, high_colour: str) -> Dict[int, str]:
+        num_variables = len(code_list[-1]["variables_after"])
+        lines = [int(x["current_line"]) for x in [empty_statement(0)] + deepcopy(code_list) + [empty_statement(-1)]]
+        frames_dict: Dict[int, int] = {}
+        frames_css_dict: Dict[int, str] = {}
+        for i, l in enumerate(lines):
+            frames_dict[i] = l
+        for frame in sorted(frames_dict.keys()):
+            classes = [".code_display{}".format(frame), ".codeline{0}".format(frames_dict[frame]) ] + [".var_display{}_{}".format(frame, x) for x in range(num_variables)]
+            frames_css_dict[frame] = ".line{0} polygon, .line{0} path {{ fill : {1} }} {2} {{ visibility : visible }}".format(frames_dict[frame], high_colour, ", ".join(classes))
+        return frames_css_dict
 
     @staticmethod
     def pretty_xml(xml: Element) -> str:

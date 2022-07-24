@@ -1,19 +1,19 @@
 import shlex
 import base64
+import random
 from imagecreator.image_generator import ImageGenerator
 from typing import List, Dict, Tuple, Any
 from copy import deepcopy
 from graphviz import Source
-from dominate.tags import img, style
+from dominate.tags import img, style, div, button, span, script, br
 from xml.dom.minidom import Element, parseString, Comment
 from xml.dom import getDOMImplementation
+from builder.extra_tags import scrpt, CDATA
 from pygments.lexers import PythonLexer
 from parser.parser_types import Edge, Calculation, Statement, empty_statement
 from dominate.util import raw
-from builder.extra_tags import CDATA
 from dominate.svg import svg, text, g, tspan, defs, rect
 from pygments.token import Text, Operator, Keyword, Name, String, Number, Punctuation
-from icecream import ic
 from parser.generic_flowchart import FlowchartCreator
 
 
@@ -67,20 +67,47 @@ class PythonImageGenerator(ImageGenerator):
             line.add(token_tspan)
         return h
 
-    def get_all_animation(self, code: List[Statement], source_code: str) -> img:
+    def get_all_animation_list(self, code: List[Statement], source_code: str) -> div:
         nodes, edges = self.flow.parse_source(source_code)
         flowchart_svg_string = self.dot_to_svg_string(self._generate_flowchart_dot_string(nodes, edges))
         flowchart_svg_xml = self.remove_xml_comments(parseString(flowchart_svg_string))
-        key = self._generate_animation_css(code, self.NODE_NORMAL_COLOUR, self.HIGHLIGHT_COLOUR)
+        frame_css_dict : Dict[int, str] = self._generate_animation_css_list(code, self.NODE_NORMAL_COLOUR, self.HIGHLIGHT_COLOUR)
         flowchart_svg_tag = flowchart_svg_xml.getElementsByTagName("svg")[0]
         graph_g = flowchart_svg_xml.getElementsByTagName("g")[0]
-        svg_defs_tag = flowchart_svg_xml.createElement("defs")
-        cdata = flowchart_svg_xml.createCDATASection(key)
-        styl = flowchart_svg_xml.createElement("style")
-        styl.setAttribute("type", "text/css")
-        flowchart_svg_tag.appendChild(svg_defs_tag)
-        svg_defs_tag.appendChild(styl)
-        styl.appendChild(cdata)
+        w, gr = self.generate_code_table_animation_svg_string(source_code, code)
+        code_table_svg_tag = self.remove_xml_comments(parseString(gr))
+        code_table_g_tag = code_table_svg_tag.getElementsByTagName("g")[0]
+        impl = getDOMImplementation()
+        new_svg_document = impl.createDocument(None, "svg", None)
+        for key, val in flowchart_svg_tag.attributes.items():
+            if key == "width":
+                flow_width = int(val[:-2])
+                code_table_g_tag.setAttribute("transform", "translate({} 0) scale(2 2) rotate(0) ".format(flow_width))
+                new_width = str(flow_width + w * 2) + "pt"
+                new_svg_document.firstChild.setAttribute(key, new_width)
+            elif key.lower() == "viewbox":
+                new_view = " ".join([str(float(a) + w * 2) if i == 2 else a for i, a in enumerate(val.split(" "))])
+                new_svg_document.firstChild.setAttribute(key, new_view)
+            else:
+                new_svg_document.firstChild.setAttribute(key, val)
+
+        code_table_group_string = ''.join([line for line in code_table_g_tag.toprettyxml(indent='').split('\n') if line.strip()])
+        ast_group_string = ''.join([line for line in graph_g.toprettyxml(indent='').split('\n') if line.strip()])
+        svg_string = ''.join([line for line in new_svg_document.toprettyxml(indent='').split('\n') if line.strip()])
+        svg_frames: Dict[int, str] = {}
+        for key, val in frame_css_dict.items():
+            defs_string = defs(style(CDATA(self.STYLESHEET.format(val)), type="text/css")).render(xhtml=True)
+            svg_frames[key] = str(base64.b64encode(self.pretty_xml(self.remove_xml_comments(parseString(svg_string[:-2] + ">" + code_table_group_string + ast_group_string + defs_string + "</svg>"))).encode('utf8')))[2:-1]
+        return svg_frames
+    
+
+    def get_all_animation(self, code: List[Statement], source_code: str) -> str:
+        nodes, edges = self.flow.parse_source(source_code)
+        flowchart_svg_string = self.dot_to_svg_string(self._generate_flowchart_dot_string(nodes, edges))
+        flowchart_svg_xml = self.remove_xml_comments(parseString(flowchart_svg_string))
+        css_anim_string = self._generate_animation_css(code, self.NODE_NORMAL_COLOUR, self.HIGHLIGHT_COLOUR)
+        flowchart_svg_tag = flowchart_svg_xml.getElementsByTagName("svg")[0]
+        graph_g = flowchart_svg_xml.getElementsByTagName("g")[0]
         w, gr = self.generate_code_table_animation_svg_string(source_code, code)
         code_table_svg_tag = self.remove_xml_comments(parseString(gr))
         code_table_g_tag = code_table_svg_tag.getElementsByTagName("g")[0]
@@ -101,12 +128,13 @@ class PythonImageGenerator(ImageGenerator):
         code_table_group_string = ''.join(
             [line for line in code_table_g_tag.toprettyxml(indent='').split('\n') if line.strip()])
         ast_group_string = ''.join([line for line in graph_g.toprettyxml(indent='').split('\n') if line.strip()])
-        defs_string = ''.join([line for line in svg_defs_tag.toprettyxml(indent='').split('\n') if line.strip()])
+        defs_string = defs(style(CDATA(self.STYLESHEET.format(css_anim_string)), type="text/css")).render(xhtml=True)
         svg_string = ''.join([line for line in new_svg_document.toprettyxml(indent='').split('\n') if line.strip()])
-        pretty = self.pretty_xml(self.remove_xml_comments(
-            parseString(svg_string[:-2] + ">" + code_table_group_string + ast_group_string + defs_string + "</svg>")))
-        byte_array = base64.b64encode(pretty.encode('utf8'))
-        return img(alt="", _class="img-responsive atto_image_button_text-bottom", style="object-fit:contain", width="100%", src="data:image/svg+xml;base64," + str(byte_array)[2:-1])
+        pretty = self.pretty_xml(self.remove_xml_comments(parseString(svg_string[:-2] + ">" + code_table_group_string + ast_group_string + defs_string + "</svg>")))
+        return pretty
+        # byte_array = base64.b64encode(pretty.encode('utf8'))
+        # return str(byte_array)[2:-1]
+
 
     def generate_code_table_animation_svg_string(self, source: str, code_list: List[Statement]) -> Tuple[float, str]:
         variables = code_list[-1]["variables_after"].keys()
@@ -120,8 +148,8 @@ class PythonImageGenerator(ImageGenerator):
         code_svg: svg = svg(id="svg", width=width, height=height, viewBox="0.00 0.00 {} {}".format(width, height), xmlns="http://www.w3.org/2000/svg")
         alt_svg = g(id="code_table")
         code_svg += alt_svg
-        animation_string = self._generate_animation_css(code_list, self.BACKGROUND_COLOUR, self.CODE_HIGHLIGHT_COLOUR)
-        code_svg += defs(style(CDATA(self.STYLESHEET.format(animation_string)), type="text/css"))
+        # animation_string = self._generate_animation_css(code_list, self.BACKGROUND_COLOUR, self.CODE_HIGHLIGHT_COLOUR)
+        # code_svg = defs(style(CDATA(self.STYLESHEET.format(animation_string)), type="text/css"))
         alt_svg += rect(fill=self.BACKGROUND_COLOUR, height=height, width=width, x=0, y=0)
         for i in range(frames):
             alt_svg += rect(fill=self.CODE_HIGHLIGHT_COLOUR, height=self.LINE_SEPARATION + 1, width=width, x=0, y=i * self.LINE_SEPARATION,

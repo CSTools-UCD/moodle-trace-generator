@@ -90,6 +90,20 @@ class questiontextT(html_tag):
     
     return sb
 
+class scrpt(html_tag):
+  def render(self, indent: str='  ' , pretty:bool=True, xhtml:bool=False) -> str:
+    data = self._render([], 0, indent, pretty, xhtml)
+    return u''.join(data)
+
+  def _render(self, sb: List[str], indent_level :int, indent_str: str, pretty: bool, xhtml: bool) -> List[str]:
+    pretty = pretty and self.is_pretty
+    name = getattr(self, 'tagname', type(self).__name__)
+    sb.append('<script type="text/javascript">')
+    sb.append(unescape(self.children[0]))
+    sb.append('</script>')  
+    print(sb)
+    return sb
+
 class tgs(html_tag):
   def _render(self, sb : List[str], indent_level : int, indent_str : str, pretty : bool, xhtml : bool) -> List[str]:
     pretty = pretty and self.is_pretty

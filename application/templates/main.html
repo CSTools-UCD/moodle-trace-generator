@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Trace Image Generator</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="{{ preface~url_for('static', filename='pico.min.css') }}">
+        <link rel="shortcut icon" href="{{preface~url_for('static', filename='favicon.png') }}">
+    <body>
+        {% include 'nav.html' %}
+        <article>
+            <div class="container">
+                <h1 class="logo">
+                    Moodle Trace Generator
+                </h1>
+                <p>
+                    The Moodle trace generator is an application for generating code tracing questions or the Moodle virtual learning environment. 
+                    Currently the system supports the generation of questions for a subset of the C and Python programming languages. 
+                    These code tracing questions are automatically graded and provide students with visual and textual feedback when completed.
+                </p>
+                <p> 
+                    The generated questions are intended to be used as an almost formative assessment of students understanding of the execution of code. 
+                    Ideally, students should be allowed several attempts to complete the questions so that they can benefit from the feedback. 
+                    For this reason the system provides the ability to use templating to create a very large number of isomorphic questions. 
+                </p>
+                <p>
+                    The system can also be used to generate images and animations showing the tracing process for code. 
+                    This is provided so that they can be used in teaching materials before the students take the tracing quizzes.
+                </p>
+                <h2>Questions</h2>
+                <p>
+                    Questions can be generated in two formats, high-level questions that trace the execution of a number of lines of code and low-level questions that trace the execution of a single line of code.
+                    These are intended for use at different stages in the students learning process. Ideally, low-level questions should be used early in the learning process and high-level questions should be used a little later.
+                </p>
+                <h2>High Level Questions</h2>
+                <img src="{{ preface~url_for('static', filename='01.high.example.png') }}" alt="High Level Question">
+                <p>This type of question is suitable for use reinforcing students' knowledge of the flow of control in programs. Default behaviour is to award points for correct variable values (at the point of change), correct sequence of line execution, evaluation of expressions and determination of type. 
+                    Many of these are chosen from options in a drop-down menu, while calculation result and values of variables must be typed by the students.</p>
+                <h2>Low Level Questions</h2>
+                <img src="{{ preface~url_for('static', filename='02.low.example.b.png') }}" alt="Low Level Question">
+                <p>This type of question is suitable for use reinforcing students' knowledge of the execution of expressions and individual statements. The questions require students to be aware of the order that operations are performed in, as well as the values calculated and the data types at each stage of the execution process.</p>
+                <h2>Feedback</h2>
+                The generated feedback includes a visual representation of the execution of the code. This can be generated in a number of different formats which can be seen on the <a href="/trace{{url_for('image_examples')}}">image examples page</a>.
+                <h2>Template Based Questions</h2>
+                <p>Using templates to create a large number of questions gives you the freedom to allow multiple submissions from students without them repeating the same question. In order to generate questions from a template, we musst alter the input code and provide another file containing values to be filled into the template.</p>
+                <h3>Altering Code</h3>
+                <p>Lets start with the code below.</p>
+<pre>
+<code class="language-python">
+a = 0
+while a &lt; 5:
+    a = a + 2
+    print(a)
+</code>
+</pre>
+
+<p>We use index based formatting to replace components of the source code. In this example we will replace the variable a, its initial value and the literal constant in the loop condition. Each a is replaced with <code>{0}</code> so that the same value will be placed in each of these locations. Similarily, the initial value is replaced by <code>{1}</code>, and the literal value in the loop condition is replaced by <code>{2}</code>, and the literal value in the addition expression is is replaced by <code>{3}</code>. </p>
+<pre>
+<code class="language-python">
+{0} = {1}
+while {0} &lt; {2}:
+    {0} = {0} + {3}
+    print({0})
+</code>
+</pre>
+<p>To fill the values in the generated questions, we must supply a plain text file containing the expected values. Each line within this text file must have the same number of values as are expected in the template. As our template above requires 4 parameters, then each line of the parameter file must have 4 values. These must also be in the order specified by the indexes in the template. </p>
+<pre>
+a 0 5 2
+b 5 10 2
+c 100 125 10
+</pre>
+<p>A code snippet is generated for each line in the parameters file. Depending on the settings, this could create one question per line or a large number of questtions per line. The table below shows the three code snippets that would be use to generate questions.</p>
+<table>
+<tr>
+<th>First line</th>
+<th>Second line</th>
+<th>Third line</th>
+</tr>
+<tr>
+<td>
+<pre>
+<code class="language-python">
+a = 0
+while a &lt; 5:
+    a = a + 2
+    print(a)
+</code>
+</pre>
+</td>
+<td>
+<pre>
+<code class="language-python">
+b = 5
+while b &lt; 10:
+    b = b + 2
+    print(b)
+</code>
+</pre>
+</td>
+<td>
+<pre>
+<code class="language-python">
+c = 100
+while c &lt; 125:
+    c = c + 10
+    print(c)
+</code>
+</pre>
+</td>
+</tr>
+</table>
+<h3>Templates and Input</h3>
+<p>When combining templates with input, the process is much the same. The intput for a code variant must be stored a json dictionary using the key the 0 indexed count of the parameter input line. 
+
+For example, the following code template:</p>
+<pre>
+<code>
+{0} = int(input("number"))
+while {0} &lt; {1}:
+    {0} = {0} + {2}
+	print({0})
+</code>
+</pre>
+<p>Could be combined with the following parameter file:</p>
+<pre>
+<code>
+a 5 2
+b 10 2
+c 125 10
+</code>
+</pre>
+<p>And the following input file:</p>
+<pre>
+<code>{
+  "0" : "0",
+  "1" : "5",
+  "2" : "100"
+}
+</code>
+</pre>
+<p>Together, these files would generate three questions with different (but similar) code and different input values. </p>
+<table>
+<tr>
+<th>First line</th>
+<th>Second line</th>
+<th>Third line</th>
+</tr>
+<tr>
+<td>
+<pre>
+<code>
+a = int(input("number"))
+while a &lt; 5:
+    a = a + 2
+    print(a)
+</code>
+</pre>
+</td>
+<td>
+
+<pre>
+<code>
+b = int(input("number"))
+while b &lt; 10:
+    b = b + 2
+    print(b)
+</code>
+</pre>
+</td>
+<td>
+
+<pre>
+<code>
+c = int(input("number"))
+while c &lt; 125:
+    c = c + 10
+    print(c)
+</code>
+</pre>
+</td>
+</tr>
+<tr>
+<td>
+    <img src="{{ preface~url_for('static', filename='04.a.png') }}" alt="Low Level Question">
+</td>
+<td>
+    <img src="{{ preface~url_for('static', filename='04.c.png') }}" alt="Low Level Question">
+</td>
+<td>
+    <img src="{{ preface~url_for('static', filename='04.c.png') }}" alt="Low Level Question">
+</td>
+</tr>
+</table>
+
+                <h2>Support</h2>
+                This tool was designed to support the teaching and learning in classes that I teach. As such I have focused on the areas that I considered to be the most important. I am open to feedback and suggestions on how to improve the system. If there is a feature of the language that you would like to see supported, then create an issue on the <a href="https://github.com/CSTools-UCD/moodle-trace-generator/issues">Github page</a> and I will consider adding it (I can make no guarantees about the timeframe). 
+            </div>
+        </article>
+        <footer>
+            &copy; 2022 <a href="https://people.ucd.ie/sean.russell">Seán Russell</a>
+        </footer>
+    </body>
+</html>

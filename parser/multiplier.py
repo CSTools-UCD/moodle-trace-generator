@@ -1,16 +1,12 @@
 import shlex
 from typing import List, Tuple
 
-def generate_from_template(code_file_name : str, param_file_name : str, question_name : str) -> List[Tuple[str,str]]:
-    param_file = open(param_file_name, "r")
-    lines = param_file.readlines()
+def generate_from_template(code_file : str, param_file : str, question_name : str) -> List[Tuple[str,str]]:
+    lines = param_file.split('\n')
     source_codes : List[Tuple[str,str]] = []
     for i, l in enumerate(lines):
         params = shlex.split(l, posix=False)
-        code_file = open( code_file_name, "r" )
-        code = code_file.read()
-        # print(code)
-        b = code.format(*params)
+        b = code_file.format(*params)
         gn = generated_name(i, len(lines))
         source_codes.append(( question_name + "-" + gn, b) )
     return source_codes

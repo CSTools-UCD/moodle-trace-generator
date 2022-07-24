@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Trace Image Generator</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="{{preface~url_for('static', filename='pico.min.css') }}">
+        <link rel="shortcut icon" href="{{preface~url_for('static', filename='favicon.png') }}">
+        <script>  
+            function check() {
+                if (document.getElementById('individual').checked) {
+                    document.getElementById('static').disabled = false;
+                    document.getElementById('static').checked = false;
+                    document.getElementById('svg').checked = true;
+                    document.getElementById('svg').disabled = false;
+                    document.getElementById('html').disabled = true;
+                    document.getElementById('html').checked = false;
+                    
+                } else {
+                    document.getElementById('static').disabled = false;
+                    document.getElementById('static').checked = false;
+                    document.getElementById('svg').disabled = false;
+                    document.getElementById('svg').checked = false;
+                    document.getElementById('html').disabled = false;
+                    document.getElementById('html').checked = true;
+                    
+                }
+            }  
+        </script>
+    </head>
+    <body>
+        {% include 'nav.html' %}
+        <article>
+            <div class="container">
+                <h1 class="logo">Trace Question Generator</h1>
+                <p>This form allows the creation of template based code tracing questions. If you are unfamiliar with the process, I suggest you try out the more basic <a href="/trace{{url_for('process_quiz_post')}}">form</a> </p>
+                <form method="post" enctype="multipart/form-data">
+                    <fieldset>
+                        <legend>Language:</legend>
+                        <label for="python">
+                            Python
+                            <input type="radio" id="python" name="language" value="python"  checked>
+                        </label>
+                        <label for="C">
+                            C
+                            <input type="radio" id="C" name="language" value="C">
+                        </label>
+                    </fieldset>
+                    <fieldset>
+                    <label for="code">
+                        Code
+                        <input type="file" name="code" id="code" required>
+                    </label>
+                    <label for="param">
+                        Paramerters file (optional)
+                    <input type="file" name="param" id="param">
+                    </label>
+                    <label for="input">
+                        Input file (optional)
+                        <input type="file" name="input" id="input">
+                    </label>
+                    </fieldset>
+                    <fieldset>
+                        <label for="qname">
+                            Question Name
+                            <input type="text" id="qname" name="qname" value="question">
+                        </label>
+                    
+                    <label for="cat">
+                        Category Name
+                        <input type="text" id="cat" name="cat" value="category">
+                    </label>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Question types:</legend>
+                        <label for="individual">
+                            Individual low-level questions
+                            <input type="radio" id="individual" name="type" value="individual" checked onchange="check()">
+                        </label>
+                        <label for="all">
+                            High-level question
+                            <input type="radio" id="all" name="type" value="all" onchange="check()">
+                        </label>
+                        <label for="both">
+                            Both high and low level questions
+                            <input type="radio" id="both" name="type" value="both" onchange="check()">
+                        </label>
+                    </fieldset>
+                    <fieldset>
+                        <label for="only">
+                            Limit lines numbers (comma separated list)
+                            <input type="text" id="only" name="only" value="">
+                        </label>
+                        <label for="reduced">
+                            Reduce Question Columns
+                            <input type="checkbox" id="reduced" name="reduced" value="reduced" checked>
+                        </label>
+                        <label for="cons">
+                            Literal Constants as Questions
+                            <input type="checkbox" id="cons" name="cons">
+                        </label>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Feedback Image Format:</legend>
+                        <label for="static">SVG<input type="radio" id="static" name="format" value="static" checked></label>
+                        <label for="svg">Animated SVG<input type="radio" id="svg" name="format" value="svg" disabled></label>
+                        <label for="html">HTML and JavaScript for image frames<input type="radio" id="html" name="format" value="html"  disabled></label>
+                    </fieldset>
+                    
+                    <button type="submit">Submit</button>
+                </form>
+            </div>
+        </article>    
+        <footer>
+            &copy; 2022 <a href="https://people.ucd.ie/sean.russell">Seán Russell</a>
+        </footer>
+    </body>
+    
+</html>

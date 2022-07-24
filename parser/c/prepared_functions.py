@@ -3,6 +3,7 @@ from parser.parser_types import Variables, Memory
 from parser.generic_parser import Parser
 import parser.c.scanf as scanf
 from icecream import ic
+
 current_input: str
 
 
@@ -10,7 +11,7 @@ def set_input(strs: List[str])-> None:
     global current_input
     current_input = "\n".join(strs)
 
-f = open("temp/output.txt", "w")
+f = open("temp_output.txt", "w")
 
 def prepared_printf(fs: str, *argv) -> int:
     s = fs % (argv)
