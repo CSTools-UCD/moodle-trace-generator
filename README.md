@@ -56,7 +56,7 @@ By adding the command line flag `-a` the above feedback is replaced with an anim
 ### Selecting Questions
 When generating low-level questions we can choose to generate only questions for specific lines within the input file. This allows us to ignore the basic and setup code that prefaces the important code in our file. This is done using the `-o` or `--only` command line flag followed by a comma separated list of the lines that questions should be generated for. 
 ```
-python3 main.py example.py -i -o 3,4
+python3 main.py example.py -t individual -o 3,4
 ```
 This example would generate questions only for lines 3 and 4 of the input code. 
 
