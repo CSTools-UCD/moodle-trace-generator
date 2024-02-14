@@ -100,8 +100,7 @@ class scrpt(html_tag):
     name = getattr(self, 'tagname', type(self).__name__)
     sb.append('<script type="text/javascript">')
     sb.append(unescape(self.children[0]))
-    sb.append('</script>')  
-    print(sb)
+    sb.append('</script>')
     return sb
 
 class tgs(html_tag):

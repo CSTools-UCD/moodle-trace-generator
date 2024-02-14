@@ -94,7 +94,7 @@ class VarInfoBuilder(object):
 
     def get_symbol_tables(self, code: Statement) -> Tuple[Dict[str, Tuple[int, Any, str, str]], Dict[str, Tuple[int, Any, str, str]]]:
         """This  function assumes that memory is not being shown and only returns the values of the variables"""
-        print(code)
+
         memory_before: Dict[int, Tuple[int, Any, str, str]] = dict()
         memory_after: Dict[int, Tuple[int, Any, str, str]] = dict()
         var_before: Dict[str, Tuple[int, Any, str, str]] = dict()
@@ -104,7 +104,6 @@ class VarInfoBuilder(object):
             memory_after[mem_loc["address"]] = (mem_loc["address"], mem_loc["value"], mem_loc["type"], mem_loc["value_show"])
         for mem_loc in code["memory_before"]:
             memory_before[mem_loc["address"]] = (mem_loc["address"], mem_loc["value"], mem_loc["type"], mem_loc["value_show"])
-            print(memory_before[mem_loc["address"]])
         for var in code["variables_before"]:
             if 'char[]' in code["variables_before"][var][0]:
                 add = code["variables_before"][var][1]
@@ -119,9 +118,7 @@ class VarInfoBuilder(object):
                 val = "".join([chr(i) for i in string_contents])
                 var_before[var] = (memory_before[add][1], val, 'char[]', self.parser.get_result_string(val))
             else:
-                print(code["variables_after"], code["variables_before"])
                 add = code["variables_after"][var][1]
-                print("looking for address",add)
                 var_before[var] = memory_after[add] # TODO find out why I used memory_before here
             add = code["variables_before"][var][1]
         for var in code["variables_after"]:

@@ -20,6 +20,9 @@ from typing import List, Dict
 import parser.multiplier as template_generator
 import constants as c
 
+from typing import NamedTuple
+Config = NamedTuple('Config', [('language', str), ('qtype',str),  ('format',str), ('name',str), ('category',str), ('only', list[int]), ('reduced', bool), ('constants',bool)])
+
 
 def delete_temp() -> None:
     files = glob.glob('temp/*.*')
@@ -30,10 +33,10 @@ def delete_temp() -> None:
         except OSError as e:
             print("Error: %s : %s" % (file_name, e.strerror))
 
-
-def generate_templated_code_question(q_root: quiz, parser: Parser, flowchart_parser: FlowchartCreator, code_file: str, parameter_file: str, question_name: str, image_generator: ImageGenerator, generate_file_questions: bool,
-                                     generate_line_questions: bool, omit_ert: bool, animate_fb: bool, display_const: bool, only_line_numbers: List[int], input_dict: Dict[str, str]):
-    templated_codes = template_generator.generate_from_template(code_file, parameter_file, question_name)
+def generate_templated_code_question(q_root: quiz, parser: Parser, flowchart_parser: FlowchartCreator, code_file: str, parameter_file: str, image_generator: ImageGenerator, input_dict: Dict[str, str], config: Config):
+    code_file_contents = open(code_file).read()
+    param_file_contents = open(parameter_file).read()
+    templated_codes = template_generator.generate_from_template(code_file_contents, param_file_contents, config.name)
     num = 0
     for name, source_code in templated_codes:
         std_in = []
@@ -41,15 +44,15 @@ def generate_templated_code_question(q_root: quiz, parser: Parser, flowchart_par
             std_in = input_dict[str(num)].split("\n")
             parser.set_input(std_in)
         code_list, line_numbers = parser.parse_source(source_code)
-        builder = Builder(parser, flowchart_parser, image_generator, omit_ert, display_const, animate_fb, code_list)
+        builder = Builder(parser, flowchart_parser, image_generator, config, code_list)
         image = image_generator.get_code_image(source_code)
 
-        if generate_line_questions:
-            questions = builder.build_line_questions(code_list, image, name, only_line_numbers, std_in)
+        if config.qtype == 'individual' or config.qtype == 'both':
+            questions = builder.build_line_questions(code_list, image, name, config.only, std_in)
             for q in questions:
                 q_root.add(q)
 
-        if generate_file_questions:
+        if config.qtype == 'script' or config.qtype == 'both':
             explanations: List[str] = Parser.get_explanations_code(code_list)
             tags = list(set([c.get_tag(x) for x in explanations]))
             questions = builder.build_file_question(code_list, name, source_code, tags, std_in)
@@ -57,22 +60,20 @@ def generate_templated_code_question(q_root: quiz, parser: Parser, flowchart_par
                 q_root.add(q)
         num = num + 1
 
-
-def generate_code_question(q_root: quiz, parser: Parser, flowchart_parser: FlowchartCreator, code_file: str, question_name: str, image_generator: ImageGenerator, generate_file_questions: bool, generate_line_questions: bool,
-                           omit_ert: bool, animate_fb: bool, display_const: bool, only_line_numbers: List[int], input_dict: Dict[str, str]):
+def generate_code_question(q_root: quiz, parser: Parser, flowchart_parser: FlowchartCreator, code_file: str, image_generator: ImageGenerator, input_dict: Dict[str, str], config: Config):
     source_code = open(code_file).read()
     std_in = []
     if input_dict and "0" in input_dict:
         std_in = input_dict[str("0")].split("\n")
         parser.set_input(std_in)
     code_list, line_numbers = parser.parse_source(source_code)
-    builder = Builder(parser, flowchart_parser, image_generator, omit_ert, display_const, animate_fb, code_list)
+    builder = Builder(parser, flowchart_parser, image_generator, config, code_list)
     image = image_generator.get_code_image(source_code)
-    if generate_line_questions:
-        questions = builder.build_line_questions(code_list, image, question_name, only_line_numbers, std_in)
+    if config.qtype == 'individual' or config.qtype == 'both':
+        questions = builder.build_line_questions(code_list, image, question_name, config.only, std_in)
         for q in questions:
             q_root.add(q)
-    if generate_file_questions:
+    if config.qtype == 'script' or config.qtype == 'both':
         explanations: List[str] = Parser.get_explanations_code(code_list)
         tags = list(set([c.get_tag(x) for x in explanations]))
         questions = builder.build_file_question(code_list, question_name, source_code, tags, std_in)
@@ -84,7 +85,8 @@ if __name__ == "__main__":
     arg_parser = argparse.ArgumentParser(description='Generating code tracing quiz questions for moodle')
     arg_parser.add_argument("codefile", help="This is the Python code file you want to generate a tracing quiz for",
                             type=str)
-    arg_parser.add_argument("-n", "--name", help="the base name for the question, if ignored the file name will be used",
+    arg_parser.add_argument("-n", "--name", default="question",
+                            help="the base name for the question, if ignored 'question' will be used",
                             type=str)
     arg_parser.add_argument("-p", "--parameter",
                             help="The name of a text file containing parameters to be inserted into the code template",
@@ -97,33 +99,46 @@ if __name__ == "__main__":
     arg_parser.add_argument("-o", "--only",
                             help="a comma separated list of the line numbers that should be used for individual question generation",
                             type=str)
+    arg_parser.add_argument("-t", "--type", default="script",
+                            help="either 'individual' for individual line questions, 'script' for questions about the whole script or 'both' for both types of questions. Defaults to 'script' if not given.",
+                            type=str)
+    arg_parser.add_argument("-f", "--format", default="svg",
+                            help="either 'svg' for unanimated svg based image, 'animated' for animated svg based image or 'html' for html based stepable sequences of images. Defaults to 'svg' if not given.",
+                            type=str)
     arg_parser.add_argument("-s", "--stdin",
                             help="A file containing input for the program/programs being traced",
                             type=str)
-    arg_parser.add_argument("-i", '--individual', dest='line', default=False, action='store_true',
-                            help="Use this option if you want to generate individual questions for each line of code.")
-    arg_parser.add_argument("-f", '--file', dest='file', default=False, action='store_true',
-                            help="Use this option to generate only file type questions. (default)")
-    arg_parser.add_argument("-b", '--both', dest='both', default=False, action='store_true',
-                            help="Use this option if you want to generate both individual and file type questions.")
+    # arg_parser.add_argument("-i", '--individual', dest='line', default=False, action='store_true',
+    #                         help="Use this option if you want to generate individual questions for each line of code.")
+    # arg_parser.add_argument("-f", '--file', dest='file', default=False, action='store_true',
+    #                         help="Use this option to generate only file type questions. (default)")
+    # arg_parser.add_argument("-b", '--both', dest='both', default=False, action='store_true',
+    #                         help="Use this option if you want to generate both individual and file type questions.")
     arg_parser.add_argument("-r", '--reduced', dest='omit_ert', default=False, action='store_true',
                             help="This reduces the questions asked in each line for the file type questions, has no effect on line questions")
-    arg_parser.add_argument("-a", '--animate', dest='animate', default=False, action='store_true',
-                            help="This creates animated versions of the feedback displayed. This option takes longer to complete and adds greatly to the size of the generated quiz file.")
+    # arg_parser.add_argument("-a", '--animate', dest='animate', default=False, action='store_true',
+    #                         help="This creates animated versions of the feedback displayed. This option takes longer to complete and adds greatly to the size of the generated quiz file.")
     arg_parser.add_argument("-d", '--display', dest='display', default=False, action='store_true',
                             help="This allows the literal value lines of individual line quesitons to be asked as questions instead of displayed as text in the calculation table.")
     arguments = arg_parser.parse_args()
 
-    arg_reduced: bool = False
-    arg_file_questions: bool
-    arg_line_questions: bool
-    arg_feedback_animations: bool = False
-    arg_display_constants: bool = False
-    arg_question_name: str
+    language: str = "python"
+    question_type: str = "script"
+    feedback_image_format: str = "svg"
+    category_name: str = "Program Tracing Questions"
+    question_name: str = "question"
+    line_numbers: List[int] = []
+    reduced_questions: bool = False
+    display_constants: bool = False
+    
+    # arg_file_questions: bool
+    # arg_line_questions: bool
+    # arg_feedback_animations: bool = False
+    
+    
     arg_code_file: str
     arg_parameters_bool: bool = False
     arg_parameters_file: str = ""
-    arg_line_numbers: List[int] = []
     arg_input_file: str = ""
     arg_input_dict: Dict[str, str] = {"0": ""}
 
@@ -141,23 +156,23 @@ if __name__ == "__main__":
             f = open(arg_input_file)
             arg_input_dict = json.load(f)
 
-    if arguments.animate:
-        arg_feedback_animations = True
+    if arguments.format:
+        feedback_image_format = arguments.format
 
     if arguments.display:
-        arg_display_constants = True
+        display_constants = True
 
     if arguments.only:
-        arg_line_numbers = [int(x) for x in arguments.only.split(",")]
+        line_numbers = [int(x) for x in arguments.only.split(",")]
 
     image_file_name = "temp/" + arg_code_file.split("/")[-1].split(".")[0] + ".png"
     quiz_file_name = "quizzes/" + arg_code_file.split("/")[-1].split(".")[0] + ".xml"
-    arg_question_name = arg_code_file.split("/")[-1].split(".")[0]
+    question_name = arg_code_file.split("/")[-1].split(".")[0]
     if arguments.name:
         quiz_file_name = "quizzes/" + arguments.name + ".xml"
-        arg_question_name = arguments.name
+        question_name = arguments.name
 
-    category_name = "Program Tracing Questions"
+    
     if arguments.category:
         category_name = arguments.category
     quiz_root = Builder.create_quiz(category_name)
@@ -165,18 +180,13 @@ if __name__ == "__main__":
     if arguments.omit_ert:
         arg_reduced = True
 
-    if arguments.file:
-        arg_file_questions = True
-        arg_line_questions = False
-    elif arguments.line:
-        arg_file_questions = False
-        arg_line_questions = True
-    elif arguments.both:
-        arg_file_questions = True
-        arg_line_questions = True
-    else:
-        arg_file_questions = True
-        arg_line_questions = False
+    if arguments.type:
+        if arguments.type.lower() == "individual":
+            question_type = "individual"
+        elif arguments.type.lower() == "script":
+            question_type = "script"
+        elif arguments.type.lower() == "both":
+            question_type = "both"
 
     if arguments.parameter:
         arg_parameters_file = arguments.parameter
@@ -187,24 +197,26 @@ if __name__ == "__main__":
     image_gen: ImageGenerator = None
     if arguments.lang:
         if arguments.lang.lower() == "python":
+            language = "python"
             code_parser = python_parser.PythonParser()
             flow_parser = python_flow_parser.PythonFlowCreator()
             image_gen = python_image_gen.PythonImageGenerator(flow_parser)
 
         elif arguments.lang.lower() == "c":
+            language = "c"
             code_parser = c_parser.CParser()
             flow_parser = c_flow_parser.CFlowCreator()
             image_gen = c_image_gen.CImageGenerator(flow_parser)
         else:
             raise Exception("This language has not been implemented yet")
-
+    cfg = Config(language, question_type, feedback_image_format, question_name, category_name, line_numbers, reduced_questions, display_constants)
     if arg_parameters_bool:
-        generate_templated_code_question(quiz_root, code_parser, flow_parser, arg_code_file, arg_parameters_file, arg_question_name, image_gen, arg_file_questions, arg_line_questions, arg_reduced, arg_feedback_animations,
-                                         arg_display_constants, arg_line_numbers, arg_input_dict)
+        generate_templated_code_question(quiz_root, code_parser, flow_parser, arg_code_file, arg_parameters_file, image_gen, arg_input_dict, cfg)
     else:
-        generate_code_question(quiz_root, code_parser, flow_parser, arg_code_file, arg_question_name, image_gen, arg_file_questions, arg_line_questions, arg_reduced, arg_feedback_animations, arg_display_constants, arg_line_numbers,
-                               arg_input_dict)
+        generate_code_question(quiz_root, code_parser, flow_parser, arg_code_file, image_gen, arg_input_dict, cfg)
 
+    if not os.path.exists('quizzes'):
+        os.makedirs('quizzes')
     f = open(quiz_file_name, "w")
     f.write(str(quiz_root))
     f.close()

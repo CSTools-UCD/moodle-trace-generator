@@ -28,10 +28,11 @@ import parser.c.flowchart as c_flowchart
 import parser.c.parser as c_parser
 import parser.python.parser as py_parser
 import parser.python.flowchart as py_flowchart
-from collections import namedtuple
+from typing import NamedTuple
+Config = NamedTuple('Config', [('language', str), ('qtype',str),  ('format',str), ('name',str), ('category',str) ('only',str), ('reduced', bool), ('constants',bool)])
+
 
 app = Flask(__name__)
-Config = namedtuple('Config', 'language qtype format name category only reduced constants')
 preface = ""
 
 @app.route('/quiz/', methods=['GET'])
@@ -293,7 +294,7 @@ def process(con : Config, files: Dict[str, str]):
     else:
         raise Exception("This language has not been implemented yet")
     quiz_root = Builder.create_quiz(con.category)
-    print(files)
+    # print(files)
     if 'param' in files:
         generate_templated_code_question(quiz_root, code_parser, flow_parser, image_gen, con, files)
     else:

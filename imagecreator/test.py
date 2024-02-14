@@ -11,7 +11,7 @@ if __name__ == "__main__":
         source = 'd = [1,2,3]\nv = 0\nwhile v < 3:\n    d[v] = d[v] *3\n    v = v + 1'
         gen = PythonImageGenerator(PythonFlowCreator())
         img1 = gen.get_code_image(source)
-        print(img1)
+        # print(img1)
         # img2 = gen.get_flowchart_image(source)
         # print(img2)
 
@@ -47,4 +47,4 @@ if __name__ == "__main__":
         # print(img4)
 
         img5 = gen.get_all_animation(code_list, source)
-        print(img5)
+        # print(img5)

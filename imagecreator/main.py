@@ -29,4 +29,4 @@ if __name__ == "__main__":
     nodes = both["nodes"]
     edges = both["edges"]
     img3 = gen.get_flowchart_image_mod(nodes, edges)
-    print(img3)
+    # print(img3)

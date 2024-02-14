@@ -57,7 +57,6 @@ JS_TEMPLATE = """
 class ImageGenerator(object):
     def __init__(self, flow_generator: FlowchartCreator) -> None:
         super().__init__()
-        print("here", flow_generator)
         self.flow = flow_generator
         self.CHAR_WIDTH = 10
         self.LINE_SEPARATION = 22
@@ -81,7 +80,7 @@ class ImageGenerator(object):
         self.last_code_highlight: int = -1
 
     def encode_image(self, image_str: str) -> img:
-        print(image_str)
+        # print(image_str)
         byte_array = base64.b64encode(image_str.encode('utf-8'))
         return img(alt="", _class="img-responsive atto_image_button_text-bottom", style="object-fit:contain", width="100%", src="data:image/svg+xml;base64," + str(byte_array)[2:-1])
 
